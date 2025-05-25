@@ -16,6 +16,8 @@ For the first part of this activity, we are going to work with the palmer pengui
 
 ```{r}
 
+glimpse(penguins)
+
 ```
 
 ## Question 1
@@ -23,6 +25,7 @@ For the first part of this activity, we are going to work with the palmer pengui
 Using base R, change the column name of "flipper_length_mm" to be "fl". 
 
 ```{r}
+names(penguins)[names(penguins) == "flipper_length_mm"] <- "fl"
 
 ```
 
@@ -30,15 +33,19 @@ Now, change the names of each column to be 1 through 8.
 
 ```{r}
 
+names(penguins) <- 1:8
+
 ```
 
 Perhaps that isn't the best change.... how can we "start over"?
 
-**insert response here**
+By hitting the "broom" button in the environment tab.
 
-Now, using base R, calculate the difference between bill length and bill depth. Add it as a column to the exsisting penguins data set. 
+Now, using base R, calculate the difference between bill length and bill depth. Add it as a column to the existing penguins data set. 
 
 ```{r}
+
+penguins$bill_diff <- penguins$bill_length_mm - penguins$bill_depth_mm
 
 ```
 
@@ -48,14 +55,25 @@ For loop in R Programming Language is useful to iterate over the elements of a l
 
 Let's practice with writing for loops! Let's write a for loop that standardizes flipper length (subtract the mean and divide by the standard deviation). First, let's remove all missing values. Name the cleaned data set `clean_penguins`. Then, do you standardization on the clean data set. 
 
+'is.na' is going to look for NA values
+
 ```{r}
 
+clean_penguins <- penguins[!is.na(penguins$flipper_length_mm), ] 
+
+penguins$fl_standardized <- NA # Must initialize column first
+
+for (i in 1:nrow(penguins)) {
+  penguins$fl_standardized[i] <- (penguins$flipper_length_mm[i] - mean(penguins$flipper_length_mm, na.rm = T)) / sd(penguins$flipper_length_mm, na.rm = T)
+}
 
 ```
 
 However, cases like this are often more efficient using vectorization...
 
 ```{r}
+
+(penguins$flipper_length_mm - mean(penguins$flipper_length_mm, na.rm = T)) / sd(penguins$flipper_length_mm, na.rm = T)
 
 ```
 
@@ -64,6 +82,17 @@ Now, let's use a for loop to create a new variable. Write a for loop that create
 
 ```{r}
 
+# Initialize a new column called 'bill_cat' with NA values
+clean_penguins$bill_cat <- NA
+
+# Loop through the rows of the cleaned data frame
+for (i in 1:nrow(clean_penguins)) {
+  if (clean_penguins$bill_length_mm[i] > 43) {
+    clean_penguins$bill_cat[i] <- "large"
+  } else {
+    clean_penguins$bill_cat[i] <- "small"
+  }
+}
 
 ```
 
@@ -89,5 +118,16 @@ Let's have a conversation on what a list is, why it's useful, and how to access 
 
 ```{r}
 
+student_info
+
+student_info$name
+
+student_info$grades$letter
+
+unlist(student_info)
+
+a <- data.frame(unlist(student_info))
+
+a
 ```
 
