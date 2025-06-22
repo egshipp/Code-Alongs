@@ -1,0 +1,179 @@
+---
+title: "week 6"
+subtitle: "apply, purrr, and functions"
+format: html
+editor: visual
+---
+
+## apply
+
+Let's practice with `apply()` functions on the `iris` data set. To remind ourselves what the `iris` data set is, please feel free to pull up the help file. Our goal is to apply the `summary()` function to all of the numeric variables in the data set.
+
+It's equally as important to recognize why we can use `apply()` for this situation, and understand the arguments we are going to use to achieve what we set out to create.
+
+Write the code below!
+
+```{r}
+library(tidyverse)
+
+apply(iris |>
+        select(where(is.numeric)), 
+      MARGIN = 2, 
+      FUN = summary, 
+      na.rm = TRUE)
+
+```
+
+To continue practicing with the apply family of functions, we are going to revisit some data frames we explored in homework 2. You can see them created below.
+
+```{r}
+set.seed(21)
+
+pre_trt_bp <- c(130, 128, 116, 124, 133, 134, 118, 126, 114, 127, 141, 138, 
+                128, 140, 137, 131, 120, 128, 139, 135)
+post_trt_bp <- c(114, 98, 113, 99, 107, 116, 113, 111, 119, 117, 101, 119, 
+                 130, 122, 106, 106, 124, 102, 117, 113)
+
+diff_bp <- pre_trt_bp - post_trt_bp 
+
+bp_df <- data.frame(patient = subjects,
+                    pre_bp = pre_trt_bp,
+                    post_bp = post_trt_bp,
+                    diff_bp = diff_bp)
+
+
+bp_list <- list(treatment = bp_df,
+                placebo = bp_df_placebo)
+
+
+
+subjects <- paste("Subject", 1:20, sep = "_")
+names(pre_trt_bp) <- names(post_trt_bp) <- subjects
+
+bp_df_placebo <- data.frame(patient = subjects[1:10],
+           pre_bp = round(rnorm(10, mean = 130, sd = 10)),
+           post_bp = round(rnorm(10, mean = 128, sd = 10)))
+bp_df_placebo$diff_bp <- bp_df_placebo$pre_bp - bp_df_placebo$post_bp
+bp_df_placebo$normal <- bp_df_placebo$post_bp < 120
+
+
+bp_list <- list(treatment = bp_df,
+                placebo = bp_df_placebo)
+```
+
+For this question, I challenge you to use an apply function to calculate the column means for the numeric variables in EACH of the two data sets contained in our list called `bp_list`.
+
+Hint: It's going to be difficult to use the apply function directly. Let's write a function that selects only the numeric variables.
+
+Next, let's use an apply function to apply our function across both data frames within the list.
+
+Finally, use an apply function to calculate the column means for all of your numeric variables.
+
+```{r}
+get_numeric_cols <- function(df){
+  df_numeric <- df |> 
+    select(where(is.numeric))
+  return(df_numeric)
+}
+
+bp_list_numeric <- lapply(X = bp_list, 
+                          FUN = get_numeric_cols)
+
+bp_list_means <- lapply(X = bp_list_numeric, 
+                        FUN = colMeans, 
+                        na.rm = TRUE)
+
+```
+
+## purrr
+
+Please see Dr. Post's video on the purrr package. As he explains, this is the `tidyverse` way of doing very similar methodology to the apply family in base R. I want to introduce you to a particularly useful function from purrr called `map_dfr()`. One useful functionality of the purrr package is that we have control over what format the results will be output in. the dfr stands for data frame. Because we are working with data frames in our list, it may (or may not) be logical that we want to combine each into one working data frame. For this exercise, I want you to...
+
+-- use `map_dfr()` to calculate the column means for each of the numeric values in your data set. You can use the saved data set from above.
+
+-- Create a new variable called group that is in reference to the first list or the second list (values should be 1 and 2)
+
+-- Pivot the data set to a form that could be better used for plotting/modeling
+
+```{r}
+
+map_dfr(bp_list_numeric, colMeans) |>
+  mutate(group = c(1,2)) |>
+  pivot_longer(cols = !group,
+               names_to = "bp",
+               values_to = "values")
+
+
+
+```
+
+## advanced function writing
+
+For this exercise, please write a function that takes a data frame, and allows you to select a categorical variable from the data set to make a contingency table with. Without properly specifying it in your initial function input, your function should allow the option to sort the contingency table.
+
+Please make sure that the function also filters out any `NA` values before making the table.
+
+```{r}
+library(palmerpenguins)
+
+peng_table <- function(data, x, ...){
+  t <- data |>
+    filter(!is.na({{x}}))
+  
+  t <- t |>
+    count({{x}}, ...)
+  
+  return(t)
+}
+
+peng_table(penguins, sex, sort = TRUE)
+```
+
+## Read through a function
+
+Below, we have a custom function. Our goal is to be able to articulate what is going on line by line. I want us to pay special attention to how this function uses `stops` and what `inherits` is doing.
+
+Comment through the code below.
+
+```{r}
+
+categorize_body_mass <- function(data, body_mass_col, threshold = 4000) {
+
+  if (!inherits(data, "data.frame")) { #if the df is not a dataframe then 
+    stop("Input 'data' must be a data frame or tibble.") #give this error
+  }
+
+  
+  body_mass_col_expr <- enquo(body_mass_col) 
+
+  body_mass_col_name <- as_label(body_mass_col_expr)
+
+  if (!(body_mass_col_name %in% names(data))) {
+    stop(paste0("Column '", body_mass_col_name, "' not found in the data frame."))
+  }
+
+  df_processed <- data |>
+    mutate(
+      body_size_cat = if_else(
+        !is.na(!!body_mass_col_expr) & (!!body_mass_col_expr > threshold),
+        "Big",
+        if_else(!is.na(!!body_mass_col_expr) & (!!body_mass_col_expr <= threshold), 
+        "Small",
+        NA_character_
+        )
+      )
+    )
+
+  return(df_processed)
+}
+
+categorize_body_mass(penguins, body_mass_g)
+
+# try peng
+
+# try p 
+
+p <- 1:5
+
+categorize_body_mass(p, body_mass_g)
+```
